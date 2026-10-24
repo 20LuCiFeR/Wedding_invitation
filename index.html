@@ -110,6 +110,14 @@ section.s{padding:84px 0}
 .ev h3{font-size:26px;color:var(--cream);line-height:1.15;margin-top:4px}
 .ev p{color:var(--lgold)}
 .ev .btn{margin-top:8px;align-self:flex-start}
+.ev .event-time {
+  color: var(--lgold);
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+}
+
 
 /* venue */
 .vn{display:grid;grid-template-columns:1fr 1.2fr;gap:34px;align-items:center;margin-top:30px}
@@ -330,7 +338,7 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
     <p class="role">|| Groom ||</p>
     <h2 class="script nm">Deepak Sharma</h2>
     <p>Son of<br><b>Mr. Subhash Chandra Sharma</b> and <b>Mrs. Radha Devi</b></p>
-    <p><span class="lbl">Address:</span><br>Purani Ginani, Bikaner, Rajasthan</p>
+    <p><span class="lbl">Address:</span><br>Purani Ginnani, Bikaner, Rajasthan</p>
    </div>
   </div>
   <div class="two">
@@ -430,11 +438,22 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
  });
 
  /* program (dates exactly as printed on the card) */
- var events=[['Tel Pujan','Monday','23','2026-11-23'],['Haldi, Mehndi','Monday','23','2026-11-23'],['Baraat Welcome','Tuesday','24','2026-11-24'],['Bheegi Palke (Doli)','Wednesday','25','2026-11-25']];
+ var events=[
+ ['Haldi & Mehndi','Monday','23','2026-11-23',''],
+ ['Dinner','Tuesday','24','2026-11-24','7:30 PM Onwards'],
+ ['Baraat Welcome','Tuesday','24','2026-11-24','8 PM'],
+ ['Bheegi Palke (Doli)','Wednesday','25','2026-11-25','6 AM']
+ ];
  var box=$('#evs');
  events.forEach(function(e){
   var c=document.createElement('div');c.className='ev tilt';c.dataset.tilt='9';
-  c.innerHTML='<div class="d">'+e[2]+'</div><div class="m">November 2026</div><h3>'+e[0]+'</h3><p>'+e[1]+', '+e[2]+' November 2026</p><button class="btn sm ghost" style="color:var(--lgold)">Add to calendar</button>';
+  c.innerHTML='<div class="d">'+e[2]+'</div>'+
+  '<div class="m">November 2026</div>'+
+  '<h3>'+e[0]+'</h3>'+
+  '<p>'+e[1]+', '+e[2]+' November 2026</p>'+
+  (e[4] ? '<p class="event-time">Time: '+e[4]+'</p>' : '')+
+  '<button class="btn sm ghost" style="color:var(--lgold)">Add to calendar</button>';
+  // c.innerHTML='<div class="d">'+e[2]+'</div><div class="m">November 2026</div><h3>'+e[0]+'</h3><p>'+e[1]+', '+e[2]+' November 2026</p><button class="btn sm ghost" style="color:var(--lgold)">Add to calendar</button>';
   c.querySelector('button').onclick=function(){
    var d=e[3].replace(/-/g,''),n=new Date(e[3]+'T00:00:00Z');n.setUTCDate(n.getUTCDate()+1);
    var end=n.toISOString().slice(0,10).replace(/-/g,'');
