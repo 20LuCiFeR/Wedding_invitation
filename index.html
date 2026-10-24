@@ -247,6 +247,26 @@ body:not(.go) .gl{opacity:0}
 #rcap{min-width:210px;text-align:center;font-style:italic;font-size:24px;color:var(--maroon)}
 .rhint{text-align:center;font-size:17px;opacity:.7;margin-top:6px}
 @media(prefers-reduced-motion:reduce){.cd b.flip{animation:none}}
+
+/* ===== v4: hero photo effects — golden aura glow (Effect 1) + slow golden light sweep (Effect 3) ===== */
+.hero .arch{animation:auraGlow 5.5s ease-in-out infinite alternate}
+@keyframes auraGlow{
+ from{box-shadow:0 0 0 8px rgba(201,151,47,.25),0 40px 70px rgba(0,0,0,.5),0 0 40px 8px rgba(243,213,142,.3)}
+ to{box-shadow:0 0 0 8px rgba(201,151,47,.32),0 40px 70px rgba(0,0,0,.5),0 0 90px 24px rgba(243,213,142,.65)}
+}
+.hero .arch::before{content:"";position:absolute;z-index:2;top:-35%;bottom:-35%;left:-60%;width:55%;pointer-events:none;opacity:0;
+ background:linear-gradient(90deg,transparent,rgba(255,200,90,.35) 30%,rgba(255,244,200,.9) 50%,rgba(255,200,90,.35) 70%,transparent);
+ mix-blend-mode:screen;filter:blur(4px);transform:translateX(0) rotate(20deg)}
+body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1.5s infinite}
+/* one slow pass (~3.5s), then rest — so it never feels like continuous flashing */
+@keyframes goldSweep{
+ 0%{transform:translateX(0) rotate(20deg);opacity:0}
+ 4%{opacity:1}
+ 30%{opacity:1}
+ 35%{transform:translateX(330%) rotate(20deg);opacity:0}
+ 100%{transform:translateX(330%) rotate(20deg);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){.hero .arch{animation:none}.hero .arch::before{display:none}}
 </style>
 </head>
 <body class="lock">
@@ -372,9 +392,9 @@ body:not(.go) .gl{opacity:0}
     <div class="from"><b>Uma Sharan Sharma</b>
      Address: Plot no. 44/45, New Bharat Colony,<br>Old Faridabad, Haryana</div>
     <div class="nums">
-     <div class="num"><span>Uma Sharan Sharma</span><a class="btn sm" href="tel:+919810276114">Call</a><a class="btn sm ghost" href="https://wa.me/919810276114" target="_blank" rel="noopener">WhatsApp</a></div>
-     <div class="num"><span>Shyam Saran Sharma</span><a class="btn sm" href="tel:+919911666931">Call</a><a class="btn sm ghost" href="https://wa.me/919911666931" target="_blank" rel="noopener">WhatsApp</a></div>
-     <div class="num"><span>Prem Saran Sharma</span><a class="btn sm" href="tel:+918447384548">Call</a><a class="btn sm ghost" href="https://wa.me/918447384548" target="_blank" rel="noopener">WhatsApp</a></div>
+     <div class="num"><span>Uma Sharan Sharma :</span><a class="btn sm" href="tel:+919810276114">Call</a><a class="btn sm ghost" href="https://wa.me/919810276114" target="_blank" rel="noopener">WhatsApp</a></div>
+     <div class="num"><span>Shyam Saran Sharma :</span><a class="btn sm" href="tel:+919911666931">Call</a><a class="btn sm ghost" href="https://wa.me/919911666931" target="_blank" rel="noopener">WhatsApp</a></div>
+     <div class="num"><span>Prem Saran Sharma :</span><a class="btn sm" href="tel:+918447384548">Call</a><a class="btn sm ghost" href="https://wa.me/918447384548" target="_blank" rel="noopener">WhatsApp</a></div>
     </div>
    </div>
   </div>
@@ -561,6 +581,7 @@ body:not(.go) .gl{opacity:0}
    var bead=new T.Mesh(new T.SphereGeometry(.045,16,16),gold);bead.position.set(d[0],0,0);m.add(bead);
    h2.rotation.set(i*.9,i*.5,i*.7);g.add(h2);hs.push(h2)});
   sc.add(g);
+  g.visible = false; // Hide both rotating golden rings
 
   /* curled, tapered 3D petals */
   var pg=new T.PlaneGeometry(.5,.8,4,6),ps=pg.attributes.position;
@@ -576,12 +597,50 @@ body:not(.go) .gl{opacity:0}
   dg.setAttribute('position',new T.BufferAttribute(dp,3));
   var dust=new T.Points(dg,new T.PointsMaterial({color:0xf3d58e,size:.07,transparent:true,opacity:.85,depthWrite:false}));sc.add(dust);
 
+  /* ---- v4: golden particle aura around the hero photo (Effect 1) ---- */
+  var ag=new T.Group();sc.add(ag);
+  var gtex=(function(){var c3=document.createElement('canvas');c3.width=c3.height=64;var x3=c3.getContext('2d'),gr=x3.createRadialGradient(32,32,0,32,32,32);
+   gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.2,'rgba(255,236,180,.95)');gr.addColorStop(.5,'rgba(243,200,100,.35)');gr.addColorStop(1,'rgba(243,200,100,0)');
+   x3.fillStyle=gr;x3.fillRect(0,0,64,64);return new T.CanvasTexture(c3)})();
+  var HW=.71,HH=1.06,HR=.71,HC=HH-HR; /* photo arch half-width / half-height in ring units */
+  function edgePt(){ /* random point on the arch outline + outward normal */
+   var A=Math.PI*HR,S=2*(HC+HH),B=HW,r=Math.random()*(A+S+B),x,y,nx,ny,th;
+   if(r<A){th=Math.random()*Math.PI;nx=Math.cos(th);ny=Math.sin(th);x=nx*HR;y=HC+ny*HR}
+   else if(r<A+S){nx=Math.random()<.5?1:-1;ny=0;x=nx*HW;y=-HH+Math.random()*(HC+HH)}
+   else{nx=0;ny=-1;x=(Math.random()*2-1)*HW;y=-HH}
+   return [x,y,nx,ny];
+  }
+  function mkAura(n,size,gain){
+   var geo=new T.BufferGeometry(),pos=new Float32Array(n*3),col=new Float32Array(n*3),L2={n:n,gain:gain,b:[],ph:[],sp:[],tf:[],lf:[],pos:pos,col:col};
+   function seed(i){var e=edgePt(),d=Math.pow(Math.random(),1.4)*.7-.06;L2.b[i]=[e[0]+e[2]*d,e[1]+e[3]*d,(Math.random()-.5)*.9,e[2],e[3]]}
+   for(var i=0;i<n;i++){seed(i);L2.ph[i]=Math.random();L2.sp[i]=.07+Math.random()*.11;L2.tf[i]=1.2+Math.random()*2.2;L2.lf[i]=Math.floor(L2.ph[i])}
+   geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('color',new T.BufferAttribute(col,3));
+   L2.pts=new T.Points(geo,new T.PointsMaterial({size:size,map:gtex,vertexColors:true,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));
+   L2.pts.frustumCulled=false;ag.add(L2.pts);L2.seed=seed;return L2;
+  }
+  var mob=innerWidth<700,auras=[mkAura(mob?110:220,.24,2.4),mkAura(mob?26:60,.75,1.3)];
+  function tickAura(t){
+   auras.forEach(function(L2){
+    for(var i=0;i<L2.n;i++){
+     var u=t*L2.sp[i]+L2.ph[i],life=Math.floor(u),p=u-life;
+     if(life!==L2.lf[i]){L2.lf[i]=life;L2.seed(i)}
+     var b=L2.b[i],e=Math.sin(Math.PI*p),k=e*(.65+.35*Math.sin(t*L2.tf[i]+L2.ph[i]*20))*L2.gain,j=i*3;
+     L2.pos[j]=b[0]+b[3]*p*.16+Math.sin(t*.6+L2.ph[i]*30)*.02;
+     L2.pos[j+1]=b[1]+b[4]*p*.16+p*.3;
+     L2.pos[j+2]=b[2];
+     L2.col[j]=k;L2.col[j+1]=k*.82;L2.col[j+2]=k*.45;
+    }
+    L2.pts.geometry.attributes.position.needsUpdate=true;L2.pts.geometry.attributes.color.needsUpdate=true;
+   });
+  }
+
   var W=1,H=1,vh=2*Math.tan(22.5*Math.PI/180)*14;
   function fit(){
    var hr=hero.getBoundingClientRect(),ar=art.getBoundingClientRect();W=hr.width;H=hr.height;
    rd.forEach(function(q){q.setSize(W,H,false)});cam.aspect=W/H;cam.updateProjectionMatrix();
    g.position.set(((ar.left+ar.width/2-hr.left)/W*2-1)*vh*cam.aspect/2,-((ar.top+ar.height/2-hr.top)/H*2-1)*vh/2,0);
    g.scale.setScalar(Math.max(ar.height,ar.width*1.3)/H*vh*.47);
+   ag.position.copy(g.position);ag.scale.copy(g.scale);
   }
   fit();addEventListener('resize',fit);
   hero.addEventListener('pointermove',function(e){if(e.pointerType==='touch')return;var b=hero.getBoundingClientRect();mx=(e.clientX-b.left)/b.width*2-1;my=(e.clientY-b.top)/b.height*2-1});
@@ -592,6 +651,7 @@ body:not(.go) .gl{opacity:0}
    var t=(now-t0)/1e3,dt=Math.min((now-last)/1e3,.05);last=now;
    tx+=(mx-tx)*.05;ty+=(my-ty)*.05;g.rotation.y=tx*.55;g.rotation.x=ty*.4;
    hs[0].rotation.y=t*.42;hs[1].rotation.x=1+t*.3;
+   ag.rotation.y=tx*.3;ag.rotation.x=ty*.2;tickAura(t);
    for(var i=0;i<N;i++){var p=P[i];p.y-=p.v*dt;if(p.y<-9)p.y=9;
     dm.position.set(p.x+Math.sin(t*p.f+p.o)*.8,p.y,p.z);dm.rotation.set(t*p.rx+p.o,t*p.ry,t*p.rz);dm.scale.setScalar(p.s);dm.updateMatrix();im.setMatrixAt(i,dm.matrix)}
    im.instanceMatrix.needsUpdate=true;dust.rotation.y=t*.02+tx*.1;dust.position.y=Math.sin(t*.3)*.3;
