@@ -288,6 +288,7 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
 </style>
 </head>
 <body class="lock">
+<audio id="weddingSong" src="song.mp3" preload="auto" loop></audio>
 <noscript><style>#gate{display:none}body.lock{overflow:auto}body:not(.go) .hero .copy>*,body:not(.go) .hero .art{opacity:1}</style></noscript>
 <div id="bar"></div>
 <div id="gate" role="dialog" aria-modal="true" aria-label="Wedding invitation">
@@ -549,6 +550,8 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
  function enter(){
   if(gate.classList.contains('go'))return;
   gate.classList.add('go');reveal();burst();
+
+  playWeddingSong();
   setTimeout(function(){gate.remove();body.classList.remove('lock')},1900);
  }
  if(location.hash){gate.remove();body.classList.remove('lock');reveal()}
@@ -801,6 +804,31 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
   finally{submit.disabled=false;submit.textContent='Download PDF'}
  });
 })();
+</script>
+<script>
+  const song = document.getElementById('weddingSong');
+
+  // Yahan starting time seconds mein set karo
+  const startTime = 30;
+
+  song.volume = 0.5;
+
+  function playWeddingSong() {
+    if (song.readyState >= 1) {
+      song.currentTime = startTime;
+      song.play().catch(function (error) {
+        console.log('Music playback failed:', error);
+      });
+    } else {
+      song.addEventListener('loadedmetadata', function () {
+        song.currentTime = startTime;
+        song.play().catch(function (error) {
+          console.log('Music playback failed:', error);
+        });
+      }, { once: true });
+      song.load();
+    }
+  }
 </script>
 </body>
 </html>
