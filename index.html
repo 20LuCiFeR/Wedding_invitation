@@ -281,8 +281,8 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
 #guestModal .guest-panel{width:min(100%,420px);padding:28px 24px;border:1.5px solid var(--gold);border-radius:20px;background:linear-gradient(145deg,#5b0b19,#35060e);color:var(--cream);box-shadow:0 24px 80px rgba(0,0,0,.45);text-align:center}
 #guestModal h2{font:400 42px/1.1 'Great Vibes',cursive;color:var(--lgold);margin-bottom:8px}
 #guestModal p{font-size:18px;margin-bottom:16px}
-#guestName{display:block;width:100%;padding:12px 14px;border:1px solid var(--gold);border-radius:10px;background:#fff8e6;color:#3b1a1a;font:600 18px 'Cormorant Garamond',serif;outline:none;margin-bottom:14px}
-#guestName:focus{box-shadow:0 0 0 3px rgba(243,213,142,.25)}
+#guestModal .guest-input{display:block;width:100%;padding:11px 14px;border:1px solid var(--gold);border-radius:10px;background:#fff8e6;color:#3b1a1a;font:600 17px 'Cormorant Garamond',serif;outline:none;margin:0 0 10px}
+#guestModal .guest-input:focus{box-shadow:0 0 0 3px rgba(243,213,142,.25)}
 #guestModal .guest-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #guestModal .guest-error{min-height:20px;color:#ffd1d1;font-size:15px;margin:0 0 10px}
 </style>
@@ -428,9 +428,11 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
 <div id="guestModal" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
  <div class="guest-panel">
   <h2 id="guestModalTitle">Personalize Your Invitation</h2>
-  <p>Enter the guest name to print in the “To” section of the invitation.</p>
+  <p>Enter your details to personalize the “To” section of the invitation.</p>
   <form id="guestForm">
-   <input id="guestName" name="guestName" type="text" maxlength="55" autocomplete="name" placeholder="Enter guest name" required>
+   <input class="guest-input" id="guestFirstName" name="firstName" type="text" maxlength="40" autocomplete="given-name" placeholder="First name" required>
+   <input class="guest-input" id="guestLastName" name="lastName" type="text" maxlength="40" autocomplete="family-name" placeholder="Last name" required>
+   <input class="guest-input" id="guestAddress" name="address" type="text" maxlength="180" autocomplete="street-address" placeholder="Address" required>
    <p class="guest-error" id="guestError" aria-live="polite"></p>
    <div class="guest-actions"><button class="btn" id="makeInvitation" type="submit">Download PDF</button><button class="btn ghost" id="cancelInvitation" type="button">Cancel</button></div>
   </form>
@@ -763,30 +765,31 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
 (function(){
  var modal=document.getElementById('guestModal');
  var form=document.getElementById('guestForm');
- var input=document.getElementById('guestName');
+ var firstInput=document.getElementById('guestFirstName');
+ var lastInput=document.getElementById('guestLastName');
+ var addressInput=document.getElementById('guestAddress');
  var error=document.getElementById('guestError');
  var submit=document.getElementById('makeInvitation');
- // Replace this placeholder with your deployed Google Apps Script Web App URL.
- var trackingEndpoint='https://script.google.com/macros/s/AKfycbxSIv1PWg-szNkgDqEH95zFbNz5g69IwRyUay1zj8GidHzPVjGs-EzpSTZRAQRrO7L6/exec';
+ var trackingEndpoint='https://script.google.com/macros/s/AKfycbxSlv1PWg-szNkDqEH95zFbNz5g69IwRyUay1zj8GidHzPVjGs-EzpSTZRAQRr07L6/exec';
  if(!modal||!form)return;
 
- // Send only the guest name. Apps Script records the timestamp on the server.
- // no-cors keeps the static GitHub Pages site from being blocked by browser CORS rules.
- function logDownloadRequest(name){
+ // Log the guest's submitted details. Apps Script adds the server-side timestamp.
+ function logDownloadRequest(guest){
   if(!trackingEndpoint||trackingEndpoint.indexOf('PASTE_YOUR_')===0)return;
   try{
    fetch(trackingEndpoint,{
     method:'POST',
     mode:'no-cors',
     headers:{'Content-Type':'text/plain;charset=UTF-8'},
-    body:JSON.stringify({name:name})
+    body:JSON.stringify(guest),
+    keepalive:true
    }).catch(function(err){console.warn('Could not send invitation download log:',err)});
   }catch(err){console.warn('Could not send invitation download log:',err)}
  }
  var downloadLinks=document.querySelectorAll('a[href="Wedding_invitation.pdf"]');
  downloadLinks.forEach(function(link){
   link.removeAttribute('download');
-  link.addEventListener('click',function(ev){ev.preventDefault();error.textContent='';input.value='';modal.classList.add('open');setTimeout(function(){input.focus()},50)});
+  link.addEventListener('click',function(ev){ev.preventDefault();error.textContent='';form.reset();modal.classList.add('open');setTimeout(function(){firstInput.focus()},50)});
  });
  function closeModal(){modal.classList.remove('open')}
  document.getElementById('cancelInvitation').addEventListener('click',closeModal);
@@ -794,8 +797,11 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal.classList.contains('open'))closeModal()});
  form.addEventListener('submit',async function(e){
   e.preventDefault();
-  var name=input.value.trim().replace(/\s+/g,' ');
-  if(!name){error.textContent='Please enter the guest name.';input.focus();return}
+  var firstName=firstInput.value.trim().replace(/\s+/g,' ');
+  var lastName=lastInput.value.trim().replace(/\s+/g,' ');
+  var address=addressInput.value.trim().replace(/\s+/g,' ');
+  if(!firstName||!lastName||!address){error.textContent='Please enter first name, last name, and address.';return}
+  var fullName=(firstName+' '+lastName).trim();
   if(!window.PDFLib){error.textContent='PDF generator did not load. Check your internet connection and try again.';return}
   submit.disabled=true;submit.textContent='Preparing PDF…';error.textContent='';
   try{
@@ -804,18 +810,21 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
    var bytes=await response.arrayBuffer();
    var pdfDoc=await PDFLib.PDFDocument.load(bytes);
    var page=pdfDoc.getPages()[0];
-   var font=await pdfDoc.embedFont(PDFLib.StandardFonts.TimesRomanBold);
-   var maxWidth=255,size=15;
-   while(size>8&&font.widthOfTextAtSize(name,size)>maxWidth)size-=0.5;
-   page.drawText(name,{x:295,y:278,size:size,font:font,color:PDFLib.rgb(0.35,0.07,0.10),maxWidth:maxWidth});
+   var nameFont=await pdfDoc.embedFont(PDFLib.StandardFonts.TimesRomanBold);
+   var addressFont=await pdfDoc.embedFont(PDFLib.StandardFonts.TimesRoman);
+   var maxWidth=255,nameSize=15;
+   while(nameSize>8&&nameFont.widthOfTextAtSize(fullName,nameSize)>maxWidth)nameSize-=0.5;
+   page.drawText(fullName,{x:295,y:278,size:nameSize,font:nameFont,color:PDFLib.rgb(0.35,0.07,0.10),maxWidth:maxWidth});
+   var addressSize=10;
+   while(addressSize>6.5&&addressFont.widthOfTextAtSize(address,addressSize)>maxWidth)addressSize-=0.5;
+   page.drawText(address,{x:295,y:250,size:addressSize,font:addressFont,color:PDFLib.rgb(0.20,0.12,0.10),maxWidth:maxWidth});
    var out=await pdfDoc.save();
    var blob=new Blob([out],{type:'application/pdf'});
-   // Log the request after the personalized PDF has been generated.
-   // The log request is asynchronous and does not delay the download.
-   logDownloadRequest(name);
+   // Send the tracking request after PDF generation, without delaying the download.
+   logDownloadRequest({firstName:firstName,lastName:lastName,address:address});
    var url=URL.createObjectURL(blob);
+   var safe=fullName.normalize('NFKD').replace(/[^a-zA-Z0-9 -]/g,'').trim().replace(/\s+/g,'-').slice(0,50)||'Guest';
    var a=document.createElement('a');
-   var safe=name.normalize('NFKD').replace(/[^a-zA-Z0-9 -]/g,'').trim().replace(/\s+/g,'-').slice(0,50)||'Guest';
    a.href=url;a.download='Invitation-'+safe+'.pdf';document.body.appendChild(a);a.click();a.remove();
    setTimeout(function(){URL.revokeObjectURL(url)},1500);
    closeModal();
