@@ -766,7 +766,23 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
  var input=document.getElementById('guestName');
  var error=document.getElementById('guestError');
  var submit=document.getElementById('makeInvitation');
+ // Replace this placeholder with your deployed Google Apps Script Web App URL.
+ var trackingEndpoint='https://script.google.com/macros/s/AKfycbxSIv1PWg-szNkgDqEH95zFbNz5g69IwRyUay1zj8GidHzPVjGs-EzpSTZRAQRrO7L6/exec';
  if(!modal||!form)return;
+
+ // Send only the guest name. Apps Script records the timestamp on the server.
+ // no-cors keeps the static GitHub Pages site from being blocked by browser CORS rules.
+ function logDownloadRequest(name){
+  if(!trackingEndpoint||trackingEndpoint.indexOf('PASTE_YOUR_')===0)return;
+  try{
+   fetch(trackingEndpoint,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=UTF-8'},
+    body:JSON.stringify({name:name})
+   }).catch(function(err){console.warn('Could not send invitation download log:',err)});
+  }catch(err){console.warn('Could not send invitation download log:',err)}
+ }
  var downloadLinks=document.querySelectorAll('a[href="Wedding_invitation.pdf"]');
  downloadLinks.forEach(function(link){
   link.removeAttribute('download');
@@ -794,6 +810,9 @@ body.go .hero .arch::before{animation:goldSweep 7s cubic-bezier(.45,.05,.35,1) 1
    page.drawText(name,{x:295,y:278,size:size,font:font,color:PDFLib.rgb(0.35,0.07,0.10),maxWidth:maxWidth});
    var out=await pdfDoc.save();
    var blob=new Blob([out],{type:'application/pdf'});
+   // Log the request after the personalized PDF has been generated.
+   // The log request is asynchronous and does not delay the download.
+   logDownloadRequest(name);
    var url=URL.createObjectURL(blob);
    var a=document.createElement('a');
    var safe=name.normalize('NFKD').replace(/[^a-zA-Z0-9 -]/g,'').trim().replace(/\s+/g,'-').slice(0,50)||'Guest';
